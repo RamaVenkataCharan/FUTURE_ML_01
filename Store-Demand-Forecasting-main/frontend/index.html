@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Store Demand Forecasting Dashboard — Professional analytics powered by LightGBM machine learning model with interactive visualizations." />
+  <title>Store Demand Forecasting · Analytics Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- API Key Modal                                                   -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <div class="modal-overlay" id="api-key-modal">
+    <div class="modal-card">
+      <div class="modal-icon">🔑</div>
+      <h2>Connect to API</h2>
+      <p>Enter your API key to access the Store Demand Forecasting dashboard. The key is displayed in the server console when you start the backend.</p>
+      <div class="modal-input-group">
+        <input
+          type="password"
+          id="api-key-input"
+          placeholder="Paste your API key here…"
+          autocomplete="off"
+          spellcheck="false"
+        />
+      </div>
+      <div class="modal-error" id="modal-error"></div>
+      <button class="btn-primary" id="modal-submit">Connect</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- Dashboard (hidden until authenticated)                          -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <div id="dashboard" class="hidden">
+
+    <!-- Header -->
+    <header class="header">
+      <div class="header-inner">
+        <div class="header-brand">
+          <div class="header-logo">📊</div>
+          <div class="header-title">Store Demand <span>Forecasting</span></div>
+        </div>
+        <div class="header-right">
+          <div class="connection-badge disconnected" id="connection-badge">
+            <div class="connection-dot"></div>
+            <span id="connection-text">Disconnected</span>
+          </div>
+          <button class="btn-disconnect" id="btn-disconnect">Disconnect</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+
+      <!-- ── KPI Section ────────────────────────────────────────── -->
+      <section>
+        <div class="section-header">
+          <div>
+            <h1 class="section-title">Overview</h1>
+            <p class="section-subtitle">Key performance indicators at a glance</p>
+          </div>
+        </div>
+
+        <div class="kpi-grid">
+          <!-- KPI 1: Total Sales -->
+          <div class="kpi-card">
+            <div class="kpi-icon">💰</div>
+            <div class="kpi-label">Total Sales</div>
+            <div class="kpi-value" id="kpi-total-sales">—</div>
+            <div class="kpi-sub" id="kpi-date-range">Loading…</div>
+          </div>
+
+          <!-- KPI 2: Avg Daily -->
+          <div class="kpi-card">
+            <div class="kpi-icon">📈</div>
+            <div class="kpi-label">Avg Daily Sales</div>
+            <div class="kpi-value" id="kpi-avg-sales">—</div>
+            <div class="kpi-sub">Per store-item combination</div>
+          </div>
+
+          <!-- KPI 3: Stores -->
+          <div class="kpi-card">
+            <div class="kpi-icon">🏪</div>
+            <div class="kpi-label">Stores</div>
+            <div class="kpi-value" id="kpi-stores">—</div>
+            <div class="kpi-sub">Unique retail locations</div>
+          </div>
+
+          <!-- KPI 4: Items -->
+          <div class="kpi-card">
+            <div class="kpi-icon">📦</div>
+            <div class="kpi-label">Items</div>
+            <div class="kpi-value" id="kpi-items">—</div>
+            <div class="kpi-sub">Unique product SKUs</div>
+          </div>
+
+          <!-- KPI 5: Records -->
+          <div class="kpi-card">
+            <div class="kpi-icon">🗂️</div>
+            <div class="kpi-label">Training Records</div>
+            <div class="kpi-value" id="kpi-records">—</div>
+            <div class="kpi-sub">5 years of daily data</div>
+          </div>
+
+          <!-- KPI 6: Forecast -->
+          <div class="kpi-card">
+            <div class="kpi-icon">🔮</div>
+            <div class="kpi-label">Forecast Points</div>
+            <div class="kpi-value" id="kpi-forecast">—</div>
+            <div class="kpi-sub" id="kpi-forecast-range">3-month horizon</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Filter Bar ─────────────────────────────────────────── -->
+      <div class="filter-bar">
+        <div class="filter-group">
+          <label for="filter-store">Store</label>
+          <select class="filter-select" id="filter-store">
+            <option value="">All Stores</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="filter-item">Item</label>
+          <select class="filter-select" id="filter-item">
+            <option value="1">Item 1</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- ── Charts Section ─────────────────────────────────────── -->
+      <section class="charts-grid">
+
+        <!-- Sales Trend -->
+        <div class="chart-card full-width" style="animation-delay: 0.35s;">
+          <div class="chart-header">
+            <h2 class="chart-title">📉 Sales Trend</h2>
+            <span class="chart-badge">Weekly · All Stores</span>
+          </div>
+          <div class="chart-container tall">
+            <canvas id="chart-trend"></canvas>
+          </div>
+        </div>
+
+        <!-- Sales by Store -->
+        <div class="chart-card" style="animation-delay: 0.4s;">
+          <div class="chart-header">
+            <h2 class="chart-title">🏪 Sales by Store</h2>
+            <span class="chart-badge">Total</span>
+          </div>
+          <div class="chart-container">
+            <canvas id="chart-by-store"></canvas>
+          </div>
+        </div>
+
+        <!-- Day of Week Pattern -->
+        <div class="chart-card" style="animation-delay: 0.45s;">
+          <div class="chart-header">
+            <h2 class="chart-title">📅 Day of Week Pattern</h2>
+            <span class="chart-badge">Avg Sales</span>
+          </div>
+          <div class="chart-container">
+            <canvas id="chart-dow"></canvas>
+          </div>
+        </div>
+
+        <!-- Monthly Sales -->
+        <div class="chart-card" style="animation-delay: 0.5s;">
+          <div class="chart-header">
+            <h2 class="chart-title">📊 Monthly Sales</h2>
+            <span class="chart-badge">Filterable</span>
+          </div>
+          <div class="chart-container">
+            <canvas id="chart-monthly"></canvas>
+          </div>
+        </div>
+
+        <!-- Top Items (Donut) -->
+        <div class="chart-card" style="animation-delay: 0.55s;">
+          <div class="chart-header">
+            <h2 class="chart-title">🏆 Top 10 Items</h2>
+            <span class="chart-badge">By Total Sales</span>
+          </div>
+          <div class="chart-container">
+            <canvas id="chart-top-items"></canvas>
+          </div>
+        </div>
+
+        <!-- Store-Item History -->
+        <div class="chart-card full-width" style="animation-delay: 0.6s;">
+          <div class="chart-header">
+            <h2 class="chart-title">🔍 Store-Item Sales History</h2>
+            <span class="chart-badge">Weekly Average · Use filters above</span>
+          </div>
+          <div class="chart-container tall">
+            <canvas id="chart-history"></canvas>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ── Model Info Section ─────────────────────────────────── -->
+      <section>
+        <div class="section-header">
+          <div>
+            <h2 class="section-title">Model Performance</h2>
+            <p class="section-subtitle">LightGBM demand forecasting model details</p>
+          </div>
+        </div>
+
+        <div class="model-grid">
+
+          <!-- SMAPE Score -->
+          <div class="model-card" style="animation-delay: 0.65s;">
+            <h3>🎯 Validation Score</h3>
+            <div class="smape-display">
+              <div class="smape-value" id="smape-value">—</div>
+              <div class="smape-label">SMAPE (lower is better)</div>
+            </div>
+            <ul class="param-list" id="model-params">
+              <!-- populated by JS -->
+            </ul>
+          </div>
+
+          <!-- Features Used -->
+          <div class="model-card" style="animation-delay: 0.7s;">
+            <h3>⚙️ Feature Engineering</h3>
+            <ul class="feature-list" id="model-features">
+              <!-- populated by JS -->
+            </ul>
+          </div>
+
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <p>Store Demand Forecasting Dashboard · Powered by <a href="#">LightGBM</a> · Built with ♥</p>
+    </footer>
+
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Application Script -->
+  <script src="app.js"></script>
+
+</body>
+</html>
