@@ -30,7 +30,7 @@ This project utilizes data preprocessing, exploratory data analysis, feature eng
 ## Project Structure
 
 ```
-Store-Demand-Forecasting-main/
+Store-Demand-Forecasting-main/.  
 │
 ├── data/
 │   ├── train.csv
